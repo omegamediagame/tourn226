@@ -23,6 +23,7 @@ import trainer.utils.training_paths as train_paths
 from core.config.config_handler import save_config_toml
 from core.dataset.prepare_diffusion_dataset import prepare_dataset
 from core.models.utility_models import ImageModelType
+from pathlib import Path
 from trainer.utils.style_detection import detect_styles_in_prompts
 
 
@@ -41,11 +42,37 @@ def get_image_training_config_template_path(model_type: str, train_data_dir: str
         print(f"Styles: {styles}")
 
         if styles:
-            return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_sdxl_style.toml"), True
+            try:
+                config_file = f"{Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH)}/base_diffusion_sdxl_style_{styles[0][0].split(' ', 1)[0].lower()}.toml"
+                print(f"config_file0: {config_file}")
+                if os.path.exists(config_file):
+                    print(f"Config: {config_file}")
+                    return config_file, True
+                else:
+                    config_file = f"{Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH)}/base_diffusion_sdxl_style_{styles[1][0].split(' ', 1)[0].lower()}.toml"
+                    print(f"config_file1: {config_file}")
+                    if os.path.exists(config_file):
+                        print(f"Config: {config_file}")
+                        return config_file, True
+                    else:
+                        config_file = f"{Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH)}/base_diffusion_sdxl_style_{styles[2][0].split(' ', 1)[0].lower()}.toml"
+                        print(f"config_file2: {config_file}")
+                        if os.path.exists(config_file):
+                            print(f"Config: {config_file}")
+                            return config_file, True
+                        else:
+                            print(f"Config: base_diffusion_sdxl_style.toml")
+                            return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_sdxl_style.toml"), True
+            except:
+                print(f"Config: base_diffusion_sdxl_style.toml")
+                return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_sdxl_style.toml"), True
+                
         else:
+            print(f"Config: base_diffusion_sdxl_person.toml")
             return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_sdxl_person.toml"), False
 
     elif model_type == ImageModelType.FLUX.value:
+        print(f"Config: base_diffusion_flux.toml")
         return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_flux.toml"), False
 
 def get_model_path(path: str) -> str:

@@ -27,16 +27,21 @@ from pathlib import Path
 from trainer.utils.style_detection import detect_styles_in_prompts
 
 
-def get_image_training_config_template_path(model_type: str, train_data_dir: str) -> tuple[str, bool]:
+def get_image_training_config_template_path(model_name: str, model_type: str, train_data_dir: str) -> tuple[str, bool]:
     model_type = model_type.lower()
     if model_type == ImageModelType.SDXL.value:
+        is_person = False
         prompts_path = os.path.join(train_data_dir, "5_lora style")
+        print(f"prompts_path: {prompts_path}")
         prompts = []
         for file in os.listdir(prompts_path):
             if file.endswith(".txt"):
                 with open(os.path.join(prompts_path, file), "r") as f:
                     prompt = f.read().strip()
+                    print(f"prompt: {prompt}")
                     prompts.append(prompt)
+                    if "photo of" in prompt or "portrait of" in prompt:
+                        is_person = True
 
         styles = detect_styles_in_prompts(prompts)
         print(f"Styles: {styles}")
@@ -66,10 +71,26 @@ def get_image_training_config_template_path(model_type: str, train_data_dir: str
             except:
                 print(f"Config: base_diffusion_sdxl_style.toml")
                 return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_sdxl_style.toml"), True
-                
+
+        elif is_person:
+            config_file = f"{Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH)}/base_diffusion_sdxl_person_{model_name.split('/', 1)[1].lower()}.toml"
+            print(f"config_file_person1: {config_file}")
+            if os.path.exists(config_file):
+                print(f"Config: {config_file}")
+                return config_file, True
+            else:
+                config_file = f"{Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH)}/base_diffusion_sdxl_person_{model_name.split('/', 1)[0].lower()}.toml"
+                print(f"config_file_person0: {config_file}")
+                if os.path.exists(config_file):
+                    print(f"Config: {config_file}")
+                    return config_file, True
+                else:
+                    print(f"Config: base_diffusion_sdxl_person.toml")
+                    return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_sdxl_person.toml"), False
+
         else:
-            print(f"Config: base_diffusion_sdxl_person.toml")
-            return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_sdxl_person.toml"), False
+            print(f"Config: base_diffusion_sdxl_style.toml")
+            return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_sdxl_style.toml"), True
 
     elif model_type == ImageModelType.FLUX.value:
         print(f"Config: base_diffusion_flux.toml")
@@ -87,7 +108,7 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
     train_data_dir = train_paths.get_image_training_images_dir(task_id)
 
     """Create the diffusion config file"""
-    config_template_path, is_style = get_image_training_config_template_path(model_type, train_data_dir)
+    config_template_path, is_style = get_image_training_config_template_path(model_name, model_type, train_data_dir)
 
     with open(config_template_path, "r") as file:
         config = toml.load(file)
